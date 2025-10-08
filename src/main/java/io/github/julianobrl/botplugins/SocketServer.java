@@ -1,11 +1,6 @@
 package io.github.julianobrl.botplugins;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
 import java.nio.ByteBuffer;
@@ -14,13 +9,16 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.julianobrl.botplugins.dtos.CommandDTO;
+import io.github.julianobrl.botplugins.dtos.requests.CommandRequest;
 import io.github.julianobrl.botplugins.interfaces.IExecuteSocketCommands;
 import io.github.julianobrl.botplugins.singletons.SingleObjectMapper;
 import lombok.NoArgsConstructor;
@@ -33,14 +31,14 @@ public class SocketServer {
     private static final String SOCKET_PATH = "./data/bot.socket";
 
     private final Map<String, IExecuteSocketCommands> commandExecutors = new HashMap<>();
-    private ServerSocketChannel serverChannel; // Usamos ServerSocketChannel para UDS
+    private ServerSocketChannel serverChannel; // Usamos ServerSocketChannel para Socket
     private Thread serverThread;
     private volatile boolean running = false;
     private final Path socketFile = Paths.get(SOCKET_PATH);
 
     public void addCommandExecutor(String cmd, IExecuteSocketCommands executor) {
         commandExecutors.put(cmd.toUpperCase(), executor);
-        log.info("Comando '{}' adicionado ao servidor socket.", cmd);
+        log.info("Command '{}' added to socket server.", cmd);
     }
 
     public void start() {
@@ -50,7 +48,7 @@ public class SocketServer {
             // 1. Cria o diretório 'data' se não existir
             if (dataDir != null && Files.notExists(dataDir)) {
                 Files.createDirectories(dataDir);
-                log.info("Diretório '{}' criado.", dataDir);
+                log.info("Directory '{}' created.", dataDir);
             }
 
             // 2. Garante que o arquivo de socket anterior seja excluído antes do bind
@@ -60,23 +58,23 @@ public class SocketServer {
             running = true;
             serverThread = new Thread(this::runServerLogic, "SocketServer-Thread");
             serverThread.start();
-            log.info("Servidor UDS será iniciado. Caminho: {}", SOCKET_PATH);
+            log.info("Socket server starting on path: {}", SOCKET_PATH);
 
         } catch (IOException e) {
-            log.error("Erro ao preparar diretório para UDS: {}", e.getMessage(), e);
+            log.error("Error while preparing directories for Socket server: {}", e.getMessage(), e);
             running = false;
         }
     }
 
     public void stop() {
         running = false;
-        log.info("Parando Servidor UDS...");
+        log.info("Stopping Socket server...");
 
         if (serverChannel != null && serverChannel.isOpen()) {
             try {
                 serverChannel.close(); // Isso irá forçar o serverChannel.accept() a sair
             } catch (IOException e) {
-                log.error("Erro ao fechar ServerSocketChannel.", e);
+                log.error("Error while closing ServerSocketChannel.", e);
             }
         }
 
@@ -85,29 +83,29 @@ public class SocketServer {
             try {
                 serverThread.join(5000); // Espera a thread terminar por 5s
             } catch (InterruptedException e) {
-                log.warn("A espera pelo término da thread do servidor foi interrompida.", e);
+                log.warn("Waiting for server thread to finish has been interrupted.", e);
                 Thread.currentThread().interrupt();
             }
         }
-        log.info("Servidor UDS parado.");
+        log.info("Socket server stopped.");
     }
 
     public void delete() {
-        log.info("SocketPlugin-Delete. Removendo arquivo UDS...");
+        log.info("SocketPlugin-Delete. Removing Socket file...");
         try {
             if (serverChannel != null && serverChannel.isOpen()) {
                 serverChannel.close(); // Fecha antes de deletar, por garantia
             }
             Files.deleteIfExists(socketFile);
-            log.info("Arquivo de socket UDS '{}' removido.", socketFile);
+            log.info("Socket socket file '{}' removed.", socketFile);
         } catch (IOException e) {
-            log.error("Erro ao deletar arquivo de socket UDS: {}", e.getMessage(), e);
+            log.error("Error deleting Socket socket file: {}", e.getMessage(), e);
         }
     }
 
     private void runServerLogic() {
         try {
-            // 1. Cria o endereço UDS
+            // 1. Cria o endereço Socket
             UnixDomainSocketAddress address = UnixDomainSocketAddress.of(socketFile);
 
             // 2. Abre e faz o bind do ServerSocketChannel
@@ -115,19 +113,27 @@ public class SocketServer {
             serverChannel.bind(address);
             serverChannel.configureBlocking(true); // Modo bloqueante para o accept()
 
-            log.info("Servidor Socket UDS está escutando no arquivo {}.", SOCKET_PATH);
+            Set<PosixFilePermission> perms = EnumSet.of(
+                    PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE,
+                    PosixFilePermission.GROUP_READ, PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_EXECUTE,
+                    PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_WRITE, PosixFilePermission.OTHERS_EXECUTE
+            );
+
+            Files.setPosixFilePermissions(socketFile, perms);
+
+            log.info("Socket Socket Server is listening on the path {}.", SOCKET_PATH);
 
             // 3. Loop principal de aceitação de conexões
             while (running) {
                 try (SocketChannel clientChannel = serverChannel.accept()) { // Bloqueia e espera por uma conexão
-                    log.info("Nova conexão UDS aceita.");
+                    log.info("New Socket connection accepted.");
 
                     processClient(clientChannel);
 
                 } catch (IOException e) {
                     if (running) {
                         // Erro I/O inesperado no accept()
-                        log.error("Erro ao aceitar conexão ou processar cliente UDS.", e);
+                        log.error("Error accepting connection or processing Socket client.", e);
                         // Pequeno delay para evitar loop rápido em caso de erro persistente
                         TimeUnit.MILLISECONDS.sleep(100);
                     }
@@ -136,17 +142,17 @@ public class SocketServer {
             }
         } catch (IOException | InterruptedException e) {
             if (running) {
-                log.error("Não foi possível iniciar o ServerSocketChannel UDS no arquivo {}.", SOCKET_PATH, e);
+                log.error("Could not start ServerSocketChannel Socket at path {}.", SOCKET_PATH, e);
             }
         } finally {
             running = false; // Garante que a flag seja setada
             // O serverChannel é fechado no stop() ou no delete(), mas podemos fechar aqui também.
-            log.info("Servidor Socket UDS parou de escutar.");
+            log.info("Socket Socket Server stopped listening.");
             // Garante que o arquivo seja deletado ao sair
             try {
                 Files.deleteIfExists(socketFile);
             } catch (IOException e) {
-                log.error("Erro ao deletar arquivo UDS no finally: {}", e.getMessage());
+                log.error("Error deleting Socket file in finally: {}", e.getMessage());
             }
         }
     }
@@ -154,40 +160,37 @@ public class SocketServer {
     private void processClient(SocketChannel clientChannel) {
         ByteBuffer buffer = ByteBuffer.allocate(1024);
         try {
-            // 1. Lendo os dados do canal
             int bytesRead = clientChannel.read(buffer);
             if (bytesRead > 0) {
                 buffer.flip();
                 String inputMessage = new String(buffer.array(), 0, bytesRead).trim();
-                log.info("Mensagem UDS recebida: {}", inputMessage);
+                log.info("Socket message received!");
 
-                // 2. Processa a mensagem no formato "COMANDO:PAYLOAD"
                 String stringResponse = SingleObjectMapper.getInstance()
                         .getMapper().writeValueAsString(processCommand(inputMessage));
 
-                // 3. Envia a resposta de volta ao cliente
                 ByteBuffer responseBuffer = ByteBuffer.wrap(stringResponse.getBytes());
                 clientChannel.write(responseBuffer);
             }
             clientChannel.close();
         } catch (IOException e) {
-            log.error("Erro de I/O ao processar cliente UDS.", e);
+            log.error("I/O error while processing Socket client.", e);
         }
     }
 
     private Object processCommand(String fullMessage) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
-        CommandDTO command = mapper.readValue(fullMessage, CommandDTO.class);
+        CommandRequest command = mapper.readValue(fullMessage, CommandRequest.class);
         String cmd = command.getCommand().toUpperCase();
 
         IExecuteSocketCommands executor = commandExecutors.get(cmd);
 
         if (executor != null) {
-            log.info("Executando comando: '{}'", cmd);
+            log.info("Executing command: '{}'", cmd);
             return executor.execute(command.getData());
         } else {
-            log.warn("Comando desconhecido recebido: {}", cmd);
-            return "ERRO: Comando desconhecido: " + cmd;
+            log.warn("Unknown command received: {}", cmd);
+            return "ERRO: Unknown command received: " + cmd;
         }
     }
 }

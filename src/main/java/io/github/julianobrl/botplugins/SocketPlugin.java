@@ -1,9 +1,6 @@
 package io.github.julianobrl.botplugins;
 
-import io.github.julianobrl.botplugins.commands.socket.GetGuildsCommand;
-import io.github.julianobrl.botplugins.commands.socket.GetSelfInfoCommand;
-import io.github.julianobrl.botplugins.commands.socket.GetStatusCommand;
-import io.github.julianobrl.botplugins.commands.socket.SetActivityCommand;
+import io.github.julianobrl.botplugins.commands.socket.*;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.Plugin;
 
@@ -20,8 +17,10 @@ public class SocketPlugin extends Plugin {
         socketServer.addCommandExecutor("SELF", new GetSelfInfoCommand());
         socketServer.addCommandExecutor("GET_STATUS", new GetStatusCommand());
         socketServer.addCommandExecutor("SET_ACTIVITY", new SetActivityCommand());
-        socketServer.addCommandExecutor("SET_GUILDS", new GetGuildsCommand());
+        socketServer.addCommandExecutor("GET_GUILDS", new GetGuildsCommand());
+        socketServer.addCommandExecutor("GET_GUILD", new GetGuildCommand());
         socketServer.start();
+
     }
 
     @Override

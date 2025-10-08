@@ -1,4 +1,4 @@
-package io.github.julianobrl.botplugins.entities;
+package io.github.julianobrl.botplugins.interfaces;
 
 import net.dv8tion.jda.internal.entities.ActivityImpl;
 

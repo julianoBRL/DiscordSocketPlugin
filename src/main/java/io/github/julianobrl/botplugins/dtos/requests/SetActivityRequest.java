@@ -1,7 +1,5 @@
-package io.github.julianobrl.botplugins.dtos;
+package io.github.julianobrl.botplugins.dtos.requests;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +10,7 @@ import net.dv8tion.jda.api.entities.Activity;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SetActivityDto {
+public class SetActivityRequest {
     private Activity.ActivityType type;
     private String name;
 }

@@ -1,7 +1,5 @@
-package io.github.julianobrl.botplugins.dtos;
+package io.github.julianobrl.botplugins.dtos.reponses;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,7 +12,7 @@ import java.time.OffsetDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class SelfInfoDto {
+public class SelfInfoResponse {
     private OffsetDateTime createdAt;
     private String name;
     private String avatarUrl;
@@ -22,8 +20,8 @@ public class SelfInfoDto {
     private boolean bot;
     private boolean system;
 
-    public static SelfInfoDto fromSelfUser(SelfUser self){
-        return SelfInfoDto.builder()
+    public static SelfInfoResponse fromSelfUser(SelfUser self){
+        return SelfInfoResponse.builder()
             .createdAt(self.getTimeCreated())
             .name(self.getEffectiveName())
             .avatarUrl(self.getAvatarUrl())

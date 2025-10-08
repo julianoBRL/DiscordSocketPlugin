@@ -1,30 +1,27 @@
-package io.github.julianobrl.botplugins.dtos;
+package io.github.julianobrl.botplugins.dtos.reponses;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class GuildOwnerDto {
+public class GuildOwnerResponse {
     private String name;
     private String avatarUrl;
     private String nickname;
     private boolean owner;
     private boolean boosting;
 
-    public static GuildOwnerDto fromMember(Member member){
+    public static GuildOwnerResponse fromMember(Member member){
         if(member == null){
             return null;
         }
-        return GuildOwnerDto.builder()
+        return GuildOwnerResponse.builder()
                 .name(member.getEffectiveName())
                 .nickname(member.getNickname())
                 .avatarUrl(member.getAvatarUrl())

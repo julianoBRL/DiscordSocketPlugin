@@ -12,7 +12,7 @@
 
     <groupId>io.github.julianobrl.botplugins</groupId>
     <artifactId>SocketPlugin</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.2</version>
     <packaging>jar</packaging>
 
     <properties>

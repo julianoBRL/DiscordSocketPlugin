@@ -11,6 +11,13 @@
       "sourceUrl": "https://github.com/julianoBRL/DiscordSocketPlugin/releases/download/v1.0.1/SocketPlugin-1.0.1.jar",
       "checksum": "sha256:13453fc3bffbf2aea08c99abe6fec8f7ba3ec338463c35d8aff67ce224ded224",
       "timestamp": "2025-10-06T17:20:00Z"
+    },
+    {
+      "version": "1.1.2",
+      "changelog": "Initial release",
+      "sourceUrl": "https://github.com/julianoBRL/DiscordSocketPlugin/releases/download/v1.1.2/SocketPlugin-1.1.2.jar",
+      "checksum": "sha256:f16d61d5016057cda408f394d7f8ac2db5e5de7763f56904fabf9b2c8c39166b",
+      "timestamp": "2025-10-06T17:20:00Z"
     }
   ]
 }
